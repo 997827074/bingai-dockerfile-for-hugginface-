@@ -1,34 +1,34 @@
-# Build Stage
-# 使用 golang:alpine 作为构建阶段的基础镜像
-FROM golang:alpine AS builder
+FROM node:20
 
-# 添加 git，以便之后能从GitHub克隆项目
-RUN apk --no-cache add git
+# install git
+RUN apt update 
+RUN apt install git
 
-# 从 GitHub 克隆 go-proxy-bingai 项目到 /workspace/app 目录下
-RUN git clone https://github.com/Harry-zklcdc/go-proxy-bingai.git /workspace/app
 
-# 设置工作目录为之前克隆的项目目录
-WORKDIR /workspace/app
+ARG DEBIAN_FRONTEND=noninteractive
 
-# 编译 go 项目。-ldflags="-s -w" 是为了减少编译后的二进制大小
-RUN go build -ldflags="-s -w" -tags netgo -trimpath -o go-proxy-bingai main.go
+ENV BING_HEADER ""
 
-# Runtime Stage
-# 使用轻量级的 alpine 镜像作为运行时的基础镜像
-FROM alpine
+# Set home to the user's home directory
+ENV HOME=/home/user \
+	PATH=/home/user/.local/bin:$PATH
 
-# 设置工作目录
-WORKDIR /workspace/app
+# Set up a new user named "user" with user ID 1000
+RUN useradd -o -u 1000 user && mkdir -p $HOME/app && chown -R user $HOME
 
-# 从构建阶段复制编译后的二进制文件到运行时镜像中
-COPY --from=builder /workspace/app/go-proxy-bingai .
+# Switch to the "user" user
+USER user
 
-# 设置环境变量——Cookies"_U"，此处为随机字符
-ENV Go_Proxy_BingAI_USER_TOKEN_1="kJs8hD92ncMzLaoQWYtX5rG6bE3fZwtbggjhjdgcvbnb4iO"
+WORKDIR $HOME/app
 
-# 暴露7860端口
-EXPOSE 443
 
-# 容器启动时运行的命令
-CMD ["/workspace/app/go-proxy-bingai"]
+RUN git clone https://github.com/Harry-zklcdc/go-proxy-bingai.git bingo
+RUN chown -R user $HOME/app/bingo
+WORKDIR $HOME/app/bingo
+RUN npm install
+RUN npm run build
+
+ENV PORT 7860
+EXPOSE 7860
+
+CMD npm start
