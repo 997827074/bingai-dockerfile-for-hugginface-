@@ -25,8 +25,7 @@ WORKDIR $HOME/app
 RUN git clone https://github.com/Harry-zklcdc/go-proxy-bingai.git bingo
 RUN chown -R user $HOME/app/bingo
 WORKDIR $HOME/app/bingo
-RUN npm install
-RUN npm run build
+
 
 ENV PORT 7860
 EXPOSE 7860
