@@ -27,8 +27,8 @@ COPY --from=builder /workspace/app/go-proxy-bingai .
 # 设置环境变量——Cookies"_U"，此处为随机字符
 ENV Go_Proxy_BingAI_USER_TOKEN_1="kJs8hD92ncMzLaoQWYtX5rG6bE3fZwtbggjhjdgcvbnb4iO"
 
-# 暴露8080端口
-EXPOSE 8080
+# 暴露7860端口
+EXPOSE 7860
 
 # 容器启动时运行的命令
 CMD ["/workspace/app/go-proxy-bingai"]
