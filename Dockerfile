@@ -1,33 +1,46 @@
-FROM node:20
+FROM selenium/node-edge
 
-# install git
-RUN apt update 
-RUN apt install git
+ENV GBP_USER ${GBP_USER:-gbp}
+ENV GBP_USER_ID ${GBP_USER_ID:-1000}
 
+WORKDIR /app
 
-ARG DEBIAN_FRONTEND=noninteractive
+USER root
 
-ENV BING_HEADER ""
+RUN apt-get update && apt-get install -y curl wget && \
+    curl -L $(curl -s  https://api.github.com/repos/Harry-zklcdc/go-bingai-pass/releases/latest | grep /go-bingai-pass-linux-amd64.tar.gz | cut -d '"' -f 4) -o go-bingai-pass-linux-amd64.tar.gz && \
+    tar -zxvf go-bingai-pass-linux-amd64.tar.gz && \
+    chmod +x go-bingai-pass
 
-# Set home to the user's home directory
-ENV HOME=/home/user \
-	PATH=/home/user/.local/bin:$PATH
+RUN apt-get update && apt-get install -y curl wget && \
+    curl -L $(curl -s  https://api.github.com/repos/Harry-zklcdc/go-proxy-bingai/releases/latest | grep /go-proxy-bingai-linux-amd64.tar.gz | cut -d '"' -f 4) -o go-proxy-bingai-linux-amd64.tar.gz && \
+    tar -zxvf go-proxy-bingai-linux-amd64.tar.gz && \
+    chmod +x go-proxy-bingai
 
-# Set up a new user named "user" with user ID 1000
-RUN useradd -o -u 1000 user && mkdir -p $HOME/app && chown -R user $HOME
+RUN apt-get remove -y curl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm go-bingai-pass-linux-amd64.tar.gz
 
-# Switch to the "user" user
-USER user
+COPY supervisor.conf /etc/supervisor/conf.d/selenium.conf
 
-WORKDIR $HOME/app
+RUN groupadd -g $GBP_USER_ID $GBP_USER
+RUN useradd -rm -G sudo -u $GBP_USER_ID -g $GBP_USER_ID $GBP_USER
 
+RUN mkdir -p /tmp/edge
+RUN chown "${GBP_USER_ID}:${GBP_USER_ID}" /var/run/supervisor /var/log/supervisor
+RUN chown -R "${GBP_USER_ID}:${GBP_USER_ID}" /app /tmp/edge
+RUN chmod 777 /tmp
 
-RUN git clone https://github.com/Harry-zklcdc/go-proxy-bingai.git bingo
-RUN chown -R user $HOME/app/bingo
-WORKDIR $HOME/app/bingo
+USER $GBP_USER
 
+ENV PORT=7860
+ENV BROWSER_BINARY=/usr/bin/microsoft-edge
+# ENV PASS_TIMEOUT=10
+# ENV CHROME_PATH=/opt/google/chrome
+ENV XDG_CONFIG_HOME=/tmp/edge
+ENV XDG_CACHE_HOME=/tmp/edge
 
-ENV PORT 7860
+ENV BYPASS_SERVER=http://localhost:8080
+
 EXPOSE 7860
-
-CMD npm start
