@@ -1,46 +1,15 @@
-FROM selenium/node-edge
+FROM zklcdc/go-proxy-bingai:latest-with-pass
 
-ENV GBP_USER ${GBP_USER:-gbp}
-ENV GBP_USER_ID ${GBP_USER_ID:-1000}
-
-WORKDIR /app
-
-USER root
-
-RUN apt-get update && apt-get install -y curl wget && \
-    curl -L $(curl -s  https://api.github.com/repos/Harry-zklcdc/go-bingai-pass/releases/latest | grep /go-bingai-pass-linux-amd64.tar.gz | cut -d '"' -f 4) -o go-bingai-pass-linux-amd64.tar.gz && \
-    tar -zxvf go-bingai-pass-linux-amd64.tar.gz && \
-    chmod +x go-bingai-pass
-
-RUN apt-get update && apt-get install -y curl wget && \
-    curl -L $(curl -s  https://api.github.com/repos/Harry-zklcdc/go-proxy-bingai/releases/latest | grep /go-proxy-bingai-linux-amd64.tar.gz | cut -d '"' -f 4) -o go-proxy-bingai-linux-amd64.tar.gz && \
+RUN wget https://github.com/Harry-zklcdc/go-proxy-bingai/releases/latest/download/go-proxy-bingai-linux-amd64.tar.gz -O go-proxy-bingai-linux-amd64.tar.gz && \
     tar -zxvf go-proxy-bingai-linux-amd64.tar.gz && \
     chmod +x go-proxy-bingai
 
-RUN apt-get remove -y curl && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm go-bingai-pass-linux-amd64.tar.gz
+RUN wget https://github.com/Harry-zklcdc/go-bingai-pass/releases/latest/download/go-bingai-pass-linux-amd64.tar.gz -O go-bingai-pass-linux-amd64.tar.gz && \
+    tar -zxvf go-bingai-pass-linux-amd64.tar.gz && \
+    chmod +x go-bingai-pass
 
-COPY supervisor.conf /etc/supervisor/conf.d/selenium.conf
+RUN rm go-bingai-pass-linux-amd64.tar.gz go-proxy-bingai-linux-amd64.tar.gz
 
-RUN groupadd -g $GBP_USER_ID $GBP_USER
-RUN useradd -rm -G sudo -u $GBP_USER_ID -g $GBP_USER_ID $GBP_USER
+COPY supervisor.conf /etc/supervisor/conf.d/supervisor.conf
 
-RUN mkdir -p /tmp/edge
-RUN chown "${GBP_USER_ID}:${GBP_USER_ID}" /var/run/supervisor /var/log/supervisor
-RUN chown -R "${GBP_USER_ID}:${GBP_USER_ID}" /app /tmp/edge
-RUN chmod 777 /tmp
-
-USER $GBP_USER
-
-ENV PORT=7860
-ENV BROWSER_BINARY=/usr/bin/microsoft-edge
-# ENV PASS_TIMEOUT=10
-# ENV CHROME_PATH=/opt/google/chrome
-ENV XDG_CONFIG_HOME=/tmp/edge
-ENV XDG_CACHE_HOME=/tmp/edge
-
-ENV BYPASS_SERVER=http://localhost:8080
-
-EXPOSE 7860
+EXPOSE 8080 45678 9005
